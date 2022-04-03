@@ -1,8 +1,15 @@
 import React, { useState, useEffect, useContext, createContext } from "react";
 import { Route } from "react-router";
 import Login from "../pages/Login";
-import firebase from "./firebase";
+import { getAuth, GoogleAuthProvider, signOut, onAuthStateChanged, signInWithPopup } from "firebase/auth";
 import Preloader from '../components/Preloader'
+import firebaseConfig from './firebase';
+import { initializeApp } from "firebase/app";
+
+const initializeFirebase = () => {
+  initializeApp(firebaseConfig);
+}
+initializeFirebase();
 const authContext = createContext();
 
 export function AuthProvider({ children }) {
@@ -51,10 +58,12 @@ function useProvideAuth() {
     uid: user.uid,
   });
 
+
+  const auth = getAuth();
+  const googleProvider = new GoogleAuthProvider();
+
   const signInWithGoogle = () => {
-    return firebase
-      .auth()
-      .signInWithPopup(new firebase.auth.GoogleAuthProvider())
+    signInWithPopup(auth, googleProvider)
       .then((response) => {
         const formattedUser = formatUser(response.user);
         setUser(formattedUser);
@@ -64,39 +73,37 @@ function useProvideAuth() {
       .catch((err) => {
         setUser(null);
         setLoginStatus({ status: "resolved", error: err.message });
-      });
-  };
+      })
+  }
 
-  const signOut = () => {
-    return firebase
-      .auth()
-      .signOut()
-      .then(() => {
-        setUser(null);
-        setLoginStatus({ status: "idle", error: null });
-      });
+  const logOut = () => {
+    signOut(auth).then(() => {
+      setUser(null);
+      setLoginStatus({ status: "idle", error: null });
+    }).catch((error) => {
+      console.log(error.message);
+    })
   };
 
   useEffect(() => {
     setLoginStatus({ status: "pending", error: null });
-    const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
       if (user) {
         const formattedUser = formatUser(user);
         setUser(formattedUser);
         setLoginStatus({ status: "resolved", error: null });
       } else {
-        setLoginStatus({ status: "idle", error: null });
         setUser(false);
+        setLoginStatus({ status: "idle", error: null });
       }
-    });
-
-    return () => unsubscribe();
-  }, []);
+    })
+    return () => unsubscribe;
+  }, [auth]);
 
   return {
     user,
     loginStatus,
     signInWithGoogle,
-    signOut,
+    logOut,
   };
 }

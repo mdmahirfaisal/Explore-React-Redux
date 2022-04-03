@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 import { useAuth } from "../../lib/auth";
 
 const Header = () => {
-  const { signOut, user } = useAuth();
+  const { logOut, user } = useAuth();
 
   return (
     <div className='py-3 border-bottom bg-light '>
@@ -15,8 +15,8 @@ const Header = () => {
           <div className='d-flex align-items-center'>
             <span>{user.name}</span>
             <button
-              onClick={signOut}
-              className='btn btn-sm ms-2 btn-outline-dark'
+              onClick={logOut}
+              className='btn btn-sm ms-2 btn-outline-danger'
             >
               Logout
             </button>
